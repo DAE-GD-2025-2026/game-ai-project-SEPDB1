@@ -19,7 +19,7 @@ void ALevel_SteeringBehaviors::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AddAgent(BehaviorTypes::Seek);
+	AddAgent(BehaviourTypes::Seek);
 	SteeringAgents[0].Agent->SetDebugRenderingEnabled(true);
 }
 
@@ -77,7 +77,7 @@ void ALevel_SteeringBehaviors::Tick(float DeltaTime)
 
 #pragma region PerAgentUI
 	if (ImGui::Button("Add Agent"))
-		AddAgent(BehaviorTypes::Seek);
+		AddAgent(BehaviourTypes::Seek);
 	ImGui::Separator();
 
 	for (int i{0}; i < SteeringAgents.size(); ++i)
@@ -114,7 +114,7 @@ void ALevel_SteeringBehaviors::Tick(float DeltaTime)
 			ImGui::PushItemWidth(100);
 
 			// Add the names of your steering behaviors
-			if (ImGui::Combo("", &a.SelectedBehavior, "Seek\0Wander\0Flee\0Arrive\0Evade\0Pursuit", 4))
+			if (ImGui::Combo("", &a.SelectedBehavior, "Seek\0Wander\0Flee\0Arrive\0Face\0Evade\0Pursuit", 4))
 			{
 				bBehaviourModified = true;
 			}
@@ -189,7 +189,7 @@ void ALevel_SteeringBehaviors::Tick(float DeltaTime)
 	}
 }
 
-bool ALevel_SteeringBehaviors::AddAgent(BehaviorTypes BehaviorType, bool AutoOrient)
+bool ALevel_SteeringBehaviors::AddAgent(BehaviourTypes BehaviorType, bool AutoOrient)
 {
 	ImGui_Agent ImGuiAgent = {};
 	ImGuiAgent.Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, FVector{0,0,90}, FRotator::ZeroRotator);
@@ -223,17 +223,23 @@ void ALevel_SteeringBehaviors::SetAgentBehavior(ImGui_Agent& Agent)
 {
 	Agent.Behavior.reset();
 	
-	switch (static_cast<BehaviorTypes>(Agent.SelectedBehavior))
+	switch (static_cast<BehaviourTypes>(Agent.SelectedBehavior))
 	{
 	//TODO; Implement behaviors setting here
-	case  BehaviorTypes::Seek:
+	case  BehaviourTypes::Seek:
 		Agent.Behavior = std::make_unique<Seek>();
 		break;
-	case BehaviorTypes::Flee:
+	case BehaviourTypes::Flee:
 		Agent.Behavior = std::make_unique<Flee>();
 		break;
-	case BehaviorTypes::Arrive:
+	case BehaviourTypes::Arrive:
 		Agent.Behavior = std::make_unique<Arrive>();
+		break;
+	case BehaviourTypes::Face:
+		Agent.Behavior = std::make_unique<Face>();
+		break;
+	case BehaviourTypes::Pursuit:
+		Agent.Behavior = std::make_unique<Pursuit>();
 		break;
 	default:
 		assert(false); // Incorrect Agent Behavior gotten during SetAgentBehavior()	

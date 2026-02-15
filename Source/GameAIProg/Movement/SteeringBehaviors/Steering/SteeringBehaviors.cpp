@@ -26,14 +26,27 @@ SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	const float Distance{ static_cast<float>(FVector2D::Distance(Agent.GetPosition(), Target.Position)) };
+	SteeringOutput Steering{ Seek::CalculateSteering(DeltaT, Agent) };
+	const float Distance = Steering.LinearVelocity.Length();
 	float VelocityScale{ FMath::GetRangePct(Agent.GetSlowRadius(), Agent.GetTargetRadius(), Distance) };
 	VelocityScale = FMath::Clamp(VelocityScale, 0.0f, 1.0f);
-	
-	GEngine->ClearOnScreenDebugMessages();
-	GEngine->AddOnScreenDebugMessage(-1, 0.01f, FColor::Green, FString::Printf(TEXT("velocityScale = %f"), VelocityScale));
-	
-	Agent.SetLinearVelocityScale(VelocityScale);
+
+	Agent.SetSpeedByScale(VelocityScale);
 
 	return Seek::CalculateSteering(DeltaT, Agent);
+}
+
+SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
+{
+	Agent.SetMaxLinearSpeed(0);
+	return Seek::CalculateSteering(DeltaT, Agent);
+}
+
+SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
+{
+	SteeringOutput Steering{ Seek::CalculateSteering(DeltaT, Agent) };
+	const float TimeAwayFromTarget = Steering.LinearVelocity.Length() / Agent.GetMaxLinearSpeed();
+	//const float TargetSpeed = Target
+	
+	return Steering;
 }

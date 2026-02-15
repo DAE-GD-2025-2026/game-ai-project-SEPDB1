@@ -30,17 +30,29 @@ protected:
 class Seek : public ISteeringBehavior
 {
 public:
-		virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 };
 
 class Flee : public Seek
 {
-	public:
-		virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 };
 
 class Arrive : public Seek
 {
-	public:
-		virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+};
+
+class Face : public Seek
+{
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+};
+
+class Pursuit : public Seek
+{
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 };

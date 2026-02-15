@@ -30,15 +30,17 @@ protected:
 	virtual void BeginDestroy() override;
 
 private:
-	enum class BehaviorTypes
+	
+	enum class BehaviourTypes
 	{
 		Seek,
 		Wander,
 		Flee,
 		Arrive,
+		Face,
 		Evade,
 		Pursuit,
-
+	
 		// @ End
 		Count
 	};
@@ -47,7 +49,7 @@ private:
 	{
 		ASteeringAgent* Agent{nullptr};
 		std::unique_ptr<ISteeringBehavior> Behavior{nullptr};
-		int SelectedBehavior{static_cast<int>(BehaviorTypes::Seek)};
+		int SelectedBehavior{static_cast<int>(BehaviourTypes::Seek)};
 		int SelectedTarget = -1;
 	};
 	
@@ -56,7 +58,7 @@ private:
 	
 	int AgentIndexToRemove = -1;
 	
-	bool AddAgent(BehaviorTypes BehaviorType = BehaviorTypes::Wander, bool AutoOrient = true);
+	bool AddAgent(BehaviourTypes BehaviorType = BehaviourTypes::Wander, bool AutoOrient = true);
 	void RemoveAgent(unsigned int Index);
 	void SetAgentBehavior(ImGui_Agent& Agent);
 

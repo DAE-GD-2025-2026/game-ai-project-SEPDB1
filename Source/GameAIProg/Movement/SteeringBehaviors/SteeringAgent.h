@@ -70,7 +70,8 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void SetSteeringBehavior(ISteeringBehavior* NewSteeringBehavior);
-	void SetLinearVelocityScale(const float Scale);
+	// Multiplies scale value with the DefaultSpeed of the steering agent
+	void SetSpeedByScale(const float Scale);
 	
 	float GetSlowRadius() const;
 	float GetTargetRadius() const;
@@ -78,6 +79,5 @@ public:
 private:
 	float SlowRadius;
 	float TargetRadius;
-	float LinearVelocityScale;
-	const static float DefaultLinearVelocityScale;
+	const static float DefaultSpeed;
 };
