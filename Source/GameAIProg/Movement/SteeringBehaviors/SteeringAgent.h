@@ -70,4 +70,14 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void SetSteeringBehavior(ISteeringBehavior* NewSteeringBehavior);
+	void SetLinearVelocityScale(const float Scale);
+	
+	float GetSlowRadius() const;
+	float GetTargetRadius() const;
+	
+private:
+	float SlowRadius;
+	float TargetRadius;
+	float LinearVelocityScale;
+	const static float DefaultLinearVelocityScale;
 };
