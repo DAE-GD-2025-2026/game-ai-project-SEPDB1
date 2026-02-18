@@ -2,6 +2,7 @@
 
 #include "SteeringAgent.h"
 
+#include "AIController.h"
 #include "Interfaces/IPluginManager.h"
 
 const float ASteeringAgent::DefaultSpeed{ 600.f };
@@ -13,8 +14,7 @@ ASteeringAgent::ASteeringAgent()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	bUseControllerRotationYaw = false;
-	
+	ABaseAgent::SetIsAutoOrienting(false);
 }
 
 // Called when the game starts or when spawned
@@ -34,6 +34,7 @@ void ASteeringAgent::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+#pragma region DrawDebug
 	DrawDebugCircle(
 		GetWorld(), 
 		ABaseAgent::GetActorLocation(), 
@@ -59,11 +60,42 @@ void ASteeringAgent::Tick(float DeltaTime)
 		0, 
 		FVector::RightVector, 
 		FVector::ForwardVector);
+#pragma endregion DrawDebug
+	
+	if (SteeringBehavior)
+	{
+		SteeringOutput output = SteeringBehavior->CalculateSteering(DeltaTime, *this);
+		
+		if (!output.IsValid)
+			return;
+		
+		AddMovementInput((FVector(output.LinearVelocity, 0.f)));
+		AAIController* AIController = Cast<AAIController>(GetController());
+		
+		if (!IsAutoOrienting() && AIController)
+		{
+			float const DeltaYaw = FMath::Clamp(output.AngularVelocity, -1.f, 1.f) * GetMaxAngularSpeed() * DeltaTime;
+				
+			FRotator const CurrentRotation{ GetActorForwardVector().ToOrientationRotator() };
+			FRotator const DeltaRotation{ 0.f, DeltaYaw, 0.f };
+			FRotator const DesiredRotation{ CurrentRotation + DeltaRotation };
+				
+			if (!FMath::IsNearlyEqual(CurrentRotation.Yaw, DesiredRotation.Yaw))
+			{
+				AIController->SetControlRotation(DesiredRotation);
+				FaceRotation(DesiredRotation);
+			}
+		}
+	}
 	
 	if (SteeringBehavior)
 	{
 		SteeringOutput output = SteeringBehavior->CalculateSteering(DeltaTime, *this);
 		AddMovementInput(FVector{output.LinearVelocity, 0.f});
+		
+		// float const deltaYaw = Fmath::Clamp(output.angularVelocity, -1.f, 1.f) * GetMaxAngularSpeed() * deltaTime
+		
+		
 	}
 	
 	//GEngine->ClearOnScreenDebugMessages();
