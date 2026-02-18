@@ -16,7 +16,7 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	return Steering;
 }
 
-const float Seek::DefaultSpeed{ 600.f };
+const float Seek::DefaultSpeed{ 200.f };
 
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
@@ -74,6 +74,7 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	return Seek::CalculateSteering(DeltaT, Agent);
 }
 
+
 SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	Agent.SetMaxLinearSpeed(0);
@@ -90,7 +91,7 @@ SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 }
 
 Wander::Wander()
-	: Offset{ 125.0 }
+	: Offset{ 225.0 }
 	, Radius{ 100.f }
 	, CalculatedAngle{ 0.f }
 {
@@ -99,36 +100,36 @@ Wander::Wander()
 SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	const float RandAngle{ FMath::RandRange(0.f, PI * 2.f)};
-	const FVector2D RandOffset{ FVector2d(FMath::Cos(RandAngle), FMath::Sin(RandAngle)) * Radius };
+	const FVector2D CenterCircle = Agent.GetPosition() + FVector2D(Agent.GetActorForwardVector().X, Agent.GetActorForwardVector().Y) * Radius;
+	const FVector2D RandomPoint{ CenterCircle + (FVector2D(FMath::Cos(RandAngle), FMath::Sin(RandAngle)) * Radius) };
+	const FTargetData NewTarget{ RandomPoint };
 	
-	SetTarget(FTargetData(Agent.GetPosition() + RandOffset));
+	SetTarget(NewTarget);
 	
 #pragma region DrawDebug
-	FVector OffsetCenter{ Agent.GetActorLocation() + Agent.GetActorForwardVector() * Offset };
-	
 	DrawDebugCircle(
-	Agent.GetWorld(), 
-	OffsetCenter, 
-	Radius, 
-	32, 
-	FColor::Yellow, 
-	false, 
-	-1, 
-	0, 
-	0, 
-	FVector::RightVector, 
-	FVector::ForwardVector);
+		Agent.GetWorld(), 
+		FVector(CenterCircle, 0.0f), 
+		Radius, 
+		32, 
+		FColor::Yellow, 
+		false, 
+		-1, 
+		0, 
+		0, 
+		FVector::RightVector, 
+		FVector::ForwardVector);
 	
 	DrawDebugLine(
 		Agent.GetWorld(), 
-		Agent.GetActorLocation(), 
-		FVector(Target.Position, 0.f), 
+		FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
+		FVector(RandomPoint, 0.f), 
 		FColor::Emerald);
 	
 	DrawDebugLine(
 		Agent.GetWorld(), 
-		Agent.GetActorLocation(), 
-		OffsetCenter, 
+		FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
+		FVector(CenterCircle, 0.0f), 
 		FColor::Magenta);
 #pragma endregion DrawDebug
 	
