@@ -31,6 +31,10 @@ class Seek : public ISteeringBehavior
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+	virtual float GetDefaultSpeed() { return DefaultSpeed; }
+	
+private:
+	const static float DefaultSpeed;
 };
 
 class Flee : public Seek
@@ -42,7 +46,12 @@ public:
 class Arrive : public Seek
 {
 public:
+	Arrive();
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+	
+private:
+	float SlowRadius;
+	float TargetRadius;
 };
 
 class Face : public Seek
@@ -55,4 +64,16 @@ class Pursuit : public Seek
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+};
+
+class Wander : public Seek
+{
+public:
+	Wander();
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+	
+private:
+	float Offset;
+	float Radius;
+	float CalculatedAngle;
 };
