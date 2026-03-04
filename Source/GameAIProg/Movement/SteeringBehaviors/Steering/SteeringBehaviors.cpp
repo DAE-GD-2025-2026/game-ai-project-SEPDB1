@@ -13,8 +13,8 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	SteeringOutput Steering{};
 	
-	if (FVector2D::Distance(Agent.GetPosition(), Target.Position) > m_TargetRadius)
-		return Steering;
+	// if (FVector2D::Distance(Agent.GetPosition(), Target.Position) > TargetRadius)
+	// 	return Steering;
 	
 	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
 	
@@ -35,12 +35,6 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 			0, 
 			FVector::RightVector, 
 			FVector::ForwardVector);
-		
-		DrawDebugLine(
-			Agent.GetWorld(), 
-			LocationAgent, 
-			LocationAgent + FVector(Steering.LinearVelocity, 0.f), 
-			FColor::Yellow);
 	}
 #pragma endregion DrawDebug
 	
@@ -49,32 +43,19 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	SteeringOutput Steering{};
-	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
+	SteeringOutput Steering{ Seek::CalculateSteering(DeltaT, Agent) };
+	Steering.LinearVelocity = -Steering.LinearVelocity;
 	
 #pragma region DrawDebug
+	const FVector LocationAgent{ Agent.GetPosition(), 0.f };
+	
 	if (Agent.GetDebugRenderingEnabled())
 	{
-		const FVector LocationAgent{ FVector(Agent.GetPosition(), 0.f) };
-		
-		DrawDebugCircle(
-			Agent.GetWorld(), 
-			FVector(Target.Position, 0.f), 
-			DebugRadiusTarget, 
-			32, 
-			FColor::Red, 
-			false, 
-			-1, 
-			0, 
-			0, 
-			FVector::RightVector, 
-			FVector::ForwardVector);
-		
 		DrawDebugLine(
-			Agent.GetWorld(), 
-			LocationAgent, 
-			LocationAgent + FVector(Steering.LinearVelocity, 0.f), 
-			FColor::Yellow);
+		Agent.GetWorld(), 
+		LocationAgent, 
+		LocationAgent + FVector(Steering.LinearVelocity, 0.f), 
+		FColor::Yellow);
 	}
 #pragma endregion DrawDebug
 	
@@ -88,7 +69,7 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	float VelocityScale{ FMath::GetRangePct(SlowRadius, TargetRadius, Distance) };
 	VelocityScale = FMath::Clamp(VelocityScale, 0.0f, 1.0f);
 
-	Agent.SetMaxLinearSpeed(VelocityScale * Seek::GetDefaultSpeed());
+	Agent.SetMaxLinearSpeed(VelocityScale * DefaultSpeed);
 	
 
 #pragma region DrawDebug
@@ -110,7 +91,7 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 		DrawDebugCircle(
 			Agent.GetWorld(), 
 			FVector(Agent.GetPosition(), 0.f), 
-			TargetRadius, 
+			DebugRadiusTarget, 
 			32, 
 			FColor::Blue, 
 			false, 
@@ -128,12 +109,17 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	Agent.SetMaxLinearSpeed(0);
-	return Seek::CalculateSteering(DeltaT, Agent);
+	auto Steering = Seek::CalculateSteering(DeltaT, Agent);
+	Steering.LinearVelocity = FVector2D::Zero();
+	return Steering.LinearVelocity;
 }
 
 SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
+	// return no velocity when target is out of range
+	if (FVector2D::Distance(Agent.GetPosition(), Target.Position) > TargetRadius)
+		return SteeringOutput{};
+	
 	const FVector2D PursuerPos = Agent.GetPosition();
 	const FVector2D PursuerVel = FVector2D(Agent.GetVelocity().X, Agent.GetVelocity().Y);
 	const FVector2D TargetPos = Target.Position;
@@ -150,6 +136,10 @@ SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
+	// return no velocity when target is out of range
+	if (FVector2D::Distance(Agent.GetPosition(), Target.Position) > TargetRadius)
+		return SteeringOutput{};
+	
 	const FVector2D PursuerPos = Agent.GetPosition();
 	const FVector2D PursuerVel = FVector2D(Agent.GetVelocity().X, Agent.GetVelocity().Y);
 	const FVector2D TargetPos = Target.Position;
@@ -163,18 +153,19 @@ SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 	return Flee::CalculateSteering(DeltaT, Agent);
 }
-
-Wander::Wander()
-	: Offset{ 225.0 }
-	, Radius{ 100.f }
-	, CalculatedAngle{ 0.f }
-{
-}
-
 SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	const float RandAngle{ FMath::RandRange(0.f, PI * 2.f)};
-	const FVector2D CenterCircle = Agent.GetPosition() + FVector2D(Agent.GetActorForwardVector().X, Agent.GetActorForwardVector().Y) * Radius;
+	float RandAngle{ 0.f };
+	do
+	{
+		RandAngle = FMath::RandRange(0.f, PI * 2.f);
+	}
+	while (RandAngle < WanderAngle - MaxAngleChange || RandAngle > WanderAngle + MaxAngleChange);
+	
+	WanderAngle = RandAngle;
+	
+	const FVector actorForward = Agent.GetActorForwardVector();
+	const FVector2D CenterCircle = Agent.GetPosition() + FVector2D(actorForward.X, actorForward.Y) * Radius;
 	const FVector2D RandomPoint{ CenterCircle + (FVector2D(FMath::Cos(RandAngle), FMath::Sin(RandAngle)) * Radius) };
 	const FTargetData NewTarget{ RandomPoint };
 	
@@ -183,6 +174,7 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 #pragma region DrawDebug
 	if (Agent.GetDebugRenderingEnabled())
 	{
+		// Draws the wander circle
 		DrawDebugCircle(
 		Agent.GetWorld(), 
 		FVector(CenterCircle, 0.0f), 
@@ -196,12 +188,14 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 		FVector::RightVector, 
 		FVector::ForwardVector);
 	
+		// Draws a line from the actor towards the target
 		DrawDebugLine(
 			Agent.GetWorld(), 
 			FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
 			FVector(RandomPoint, 0.f), 
 			FColor::Emerald);
-	
+		
+		// Draws a line from the actor to the center of the circle
 		DrawDebugLine(
 			Agent.GetWorld(), 
 			FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 

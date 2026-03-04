@@ -31,20 +31,18 @@ class Seek : public ISteeringBehavior
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
-	virtual float GetDefaultSpeed() { return DefaultSpeed; }
-	void SetTargetRadius(float NewTargetRadius) { m_TargetRadius = NewTargetRadius; }
+	void SetTargetRadius(float radius){ TargetRadius = radius; }
 	
-private:
+protected:
+	float TargetRadius{ 1000.f  };
 	float DefaultSpeed{ 600.f };
 	float DebugRadiusTarget{ 15.f };
-	float m_TargetRadius{ 100000.f  };
 };
 
-class Flee :  public ISteeringBehavior
+class Flee :  public Seek
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
-	float DebugRadiusTarget{ 15.f };
 };
 
 class Arrive : public Seek
@@ -54,7 +52,6 @@ public:
 	
 private:
 	float SlowRadius{ 100.f };
-	float TargetRadius{ 500.f };
 	float DebugRadiusTarget{ 15.f };
 };
 
@@ -62,38 +59,28 @@ class Face : public Seek
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
-	
-private:
-	float DebugRadiusTarget{ 15.f };
 };
 
 class Pursuit : public Seek
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
-	
-private:
-	float DebugRadiusTarget{ 15.f };
 };
 
 class Evade : public Flee
 {
-	public:
-	 virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
-	
-private:
-	float DebugRadiusTarget{ 15.f };
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 };
 
 class Wander : public Seek
 {
 public:
-	Wander();
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 	
-private:
-	float Offset;
-	float Radius;
-	float CalculatedAngle;
-	float DebugRadiusTarget{ 15.f };
+protected:
+	float Offset{ 6.f };
+	float Radius{ 4.f };
+	float MaxAngleChange{ PI / 4 };
+	float WanderAngle{ 0.f };
 };
