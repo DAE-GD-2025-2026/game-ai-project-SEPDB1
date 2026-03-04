@@ -12,6 +12,10 @@
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	SteeringOutput Steering{};
+	
+	if (FVector2D::Distance(Agent.GetPosition(), Target.Position) > m_TargetRadius)
+		return Steering;
+	
 	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
 	
 #pragma region DrawDebug
