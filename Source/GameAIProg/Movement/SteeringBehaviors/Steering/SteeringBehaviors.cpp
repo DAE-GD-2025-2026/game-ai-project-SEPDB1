@@ -3,6 +3,7 @@
 #include <string>
 
 #include "GameAIProg/Movement/SteeringBehaviors/SteeringAgent.h"
+#include "Runtime/Renderer/Internal/MaterialCache/MaterialCacheRenderer.h"
 
 //SEEK
 //*******
@@ -13,23 +14,67 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	SteeringOutput Steering{};
 	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
 	
+#pragma region DrawDebug
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		const FVector LocationAgent{ FVector(Agent.GetPosition(), 0.f) };
+		
+		DrawDebugCircle(
+			Agent.GetWorld(), 
+			FVector(Target.Position, 0.f), 
+			DebugRadiusTarget, 
+			32, 
+			FColor::Red, 
+			false, 
+			-1, 
+			0, 
+			0, 
+			FVector::RightVector, 
+			FVector::ForwardVector);
+		
+		DrawDebugLine(
+			Agent.GetWorld(), 
+			LocationAgent, 
+			LocationAgent + FVector(Steering.LinearVelocity, 0.f), 
+			FColor::Yellow);
+	}
+#pragma endregion DrawDebug
+	
 	return Steering;
 }
-
-const float Seek::DefaultSpeed{ 200.f };
 
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	SteeringOutput Steering{ Seek::CalculateSteering(DeltaT, Agent) };
+	SteeringOutput Steering{};
+	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
 	
-	Steering.LinearVelocity = -Steering.LinearVelocity;
+#pragma region DrawDebug
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		const FVector LocationAgent{ FVector(Agent.GetPosition(), 0.f) };
+		
+		DrawDebugCircle(
+			Agent.GetWorld(), 
+			FVector(Target.Position, 0.f), 
+			DebugRadiusTarget, 
+			32, 
+			FColor::Red, 
+			false, 
+			-1, 
+			0, 
+			0, 
+			FVector::RightVector, 
+			FVector::ForwardVector);
+		
+		DrawDebugLine(
+			Agent.GetWorld(), 
+			LocationAgent, 
+			LocationAgent + FVector(Steering.LinearVelocity, 0.f), 
+			FColor::Yellow);
+	}
+#pragma endregion DrawDebug
+	
 	return Steering;
-}
-
-Arrive::Arrive()
-	: SlowRadius{ 100.f }
-	, TargetRadius{ 500.f }
-{
 }
 
 SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
@@ -43,32 +88,34 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	
 
 #pragma region DrawDebug
-	DrawDebugCircle(
-		Agent.GetWorld(), 
-		FVector(Agent.GetPosition(), 0.f), 
-		SlowRadius, 
-		32, 
-		FColor::Yellow, 
-		false, 
-		-1, 
-		0, 
-		0, 
-		FVector::RightVector, 
-		FVector::ForwardVector);
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		DrawDebugCircle(
+			Agent.GetWorld(), 
+			FVector(Agent.GetPosition(), 0.f), 
+			SlowRadius, 
+			32, 
+			FColor::Yellow, 
+			false, 
+			-1, 
+			0, 
+			0, 
+			FVector::RightVector, 
+			FVector::ForwardVector);
 	
-	DrawDebugCircle(
-		Agent.GetWorld(), 
-		FVector(Agent.GetPosition(), 0.f), 
-		TargetRadius, 
-		32, 
-		FColor::Blue, 
-		false, 
-		-1, 
-		0, 
-		0, 
-		FVector::RightVector, 
-		FVector::ForwardVector);
-	
+		DrawDebugCircle(
+			Agent.GetWorld(), 
+			FVector(Agent.GetPosition(), 0.f), 
+			TargetRadius, 
+			32, 
+			FColor::Blue, 
+			false, 
+			-1, 
+			0, 
+			0, 
+			FVector::RightVector, 
+			FVector::ForwardVector);
+	}
 #pragma endregion DrawDebug
 	
 	return Seek::CalculateSteering(DeltaT, Agent);
@@ -83,11 +130,34 @@ SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	SteeringOutput Steering{ Seek::CalculateSteering(DeltaT, Agent) };
-	const float TimeAwayFromTarget = Steering.LinearVelocity.Length() / Agent.GetMaxLinearSpeed();
-	//const float TargetSpeed = Target
-	
-	return Steering;
+	const FVector2D PursuerPos = Agent.GetPosition();
+	const FVector2D PursuerVel = FVector2D(Agent.GetVelocity().X, Agent.GetVelocity().Y);
+	const FVector2D TargetPos = Target.Position;
+	const FVector2D TargetVel = FVector2D(Target.LinearVelocity.X, Target.LinearVelocity.Y);
+
+	const float Distance = FVector2D::Distance(PursuerPos, TargetPos);
+	const float PursuerSpeed = PursuerVel.Size();
+	const float PredictionTime = PursuerSpeed > 0 ? Distance / PursuerSpeed : 0;
+
+	Target.Position = TargetPos + TargetVel * PredictionTime;
+
+	return Seek::CalculateSteering(DeltaT, Agent);
+}
+
+SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
+{
+	const FVector2D PursuerPos = Agent.GetPosition();
+	const FVector2D PursuerVel = FVector2D(Agent.GetVelocity().X, Agent.GetVelocity().Y);
+	const FVector2D TargetPos = Target.Position;
+	const FVector2D TargetVel = FVector2D(Target.LinearVelocity.X, Target.LinearVelocity.Y);
+
+	const float Distance = FVector2D::Distance(PursuerPos, TargetPos);
+	const float PursuerSpeed = PursuerVel.Size();
+	const float PredictionTime = PursuerSpeed > 0 ? Distance / PursuerSpeed : 0;
+
+	Target.Position = TargetPos + TargetVel * PredictionTime;
+
+	return Flee::CalculateSteering(DeltaT, Agent);
 }
 
 Wander::Wander()
@@ -107,7 +177,9 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	SetTarget(NewTarget);
 	
 #pragma region DrawDebug
-	DrawDebugCircle(
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		DrawDebugCircle(
 		Agent.GetWorld(), 
 		FVector(CenterCircle, 0.0f), 
 		Radius, 
@@ -120,17 +192,18 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 		FVector::RightVector, 
 		FVector::ForwardVector);
 	
-	DrawDebugLine(
-		Agent.GetWorld(), 
-		FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
-		FVector(RandomPoint, 0.f), 
-		FColor::Emerald);
+		DrawDebugLine(
+			Agent.GetWorld(), 
+			FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
+			FVector(RandomPoint, 0.f), 
+			FColor::Emerald);
 	
-	DrawDebugLine(
-		Agent.GetWorld(), 
-		FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
-		FVector(CenterCircle, 0.0f), 
-		FColor::Magenta);
+		DrawDebugLine(
+			Agent.GetWorld(), 
+			FVector(Agent.GetActorLocation().X, Agent.GetActorLocation().Y, 0.f), 
+			FVector(CenterCircle, 0.0f), 
+			FColor::Magenta);	
+	}
 #pragma endregion DrawDebug
 	
 	return Seek::CalculateSteering(DeltaT, Agent);

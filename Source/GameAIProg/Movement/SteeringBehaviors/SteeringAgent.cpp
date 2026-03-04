@@ -9,8 +9,6 @@
 
 // Sets default values
 ASteeringAgent::ASteeringAgent()
-	// : SlowRadius{ 100.f }
-	// , TargetRadius{ 500.f }
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
