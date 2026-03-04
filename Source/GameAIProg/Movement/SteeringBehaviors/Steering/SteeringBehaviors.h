@@ -32,10 +32,12 @@ class Seek : public ISteeringBehavior
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
 	virtual float GetDefaultSpeed() { return DefaultSpeed; }
+	void SetTargetRadius(float NewTargetRadius) { m_TargetRadius = NewTargetRadius; }
 	
 private:
 	float DefaultSpeed{ 600.f };
 	float DebugRadiusTarget{ 15.f };
+	float m_TargetRadius{ 100000.f  };
 };
 
 class Flee :  public ISteeringBehavior
